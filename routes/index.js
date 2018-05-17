@@ -1,4 +1,4 @@
-const contentRoutes = require('./content_routes');
+const contentRoutes = require('./authcontroller.js');
 
 module.exports = function(app, db) {
   contentRoutes(app, db);

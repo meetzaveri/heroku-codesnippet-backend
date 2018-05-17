@@ -7,11 +7,13 @@ exports.verifyPassword = function(password, salt){
   var value = hash.digest('hex');
   return value;
 };
+
+
 exports.generateToken = function(dataItem,SECRET_KEY){
   return jwt.sign({ email: dataItem.email, profileId: dataItem.profileId, userId: dataItem.id, organization: dataItem.organization }, SECRET_KEY);
 }
 
-
+// For decoding token and extracting various data
 exports.decodeToken = function decodeToken(token, secretKey, cb){
   jwt.verify(token, secretKey, function(err, decoded) {
     cb(err,decoded);
