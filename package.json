@@ -12,15 +12,19 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.18.0",
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.18.2",
     "cors": "^2.8.4",
+    "crypto": "^1.0.1",
     "express": "^4.16.2",
     "hackerearth-node": "^2.3.9",
+    "jsonwebtoken": "^8.2.1",
     "mongodb": "^3.0.4",
-    "showdown": "^1.8.6"
+    "showdown": "^1.8.6",
+    "uuid": "^3.2.1"
   },
   "devDependencies": {
-    "nodemon": "^1.17.1"
+    "nodemon": "^1.17.4"
   },
   "keywords": [
     "heroku"

@@ -2,6 +2,11 @@ var ObjectID = require('mongodb').ObjectID;
 var showdown  = require('showdown'),
     converter = new showdown.Converter();
 var axios = require('axios');
+var uuidv4 = require('uuid/v4');
+var utils = require('../utils/utils');
+var jwt = require('jsonwebtoken');
+var bcrypt = require('bcryptjs');
+var config = require('../config/index');
 
 showdown.setFlavor('github');
 
@@ -53,15 +58,30 @@ module.exports = function(app, db) {
         })
     });
 
+    // Getting codes
     app.get('/codes',(req, res) => {
-        
-        db.collection('codes').find({}).toArray((err,doc) => {
+        // console.log('Req headers',req.headers);
+        const { authorization } = req.headers;
+        console.log('authorization',authorization)
+        const authData = authorization.split(' ');
+        const token = authData[1];
+        utils.decodeToken(token,config.secret,function(err,userObj){
             if(err){
-                console.log(err);
-            }
-            else {
-                console.log('Doc', doc);
-                res.send(doc)
+                res.send('Error occured while extracting token. User not authenticated')
+            } else{
+                console.log('userObj',userObj);
+                const { profileId } = userObj;
+                
+                var user = {profile_id:userObj.profile_id};
+                db.collection('codes').find(user).toArray((err,doc) => {
+                    if(err){
+                        console.log(err);
+                    }
+                    else {
+                        console.log('Doc', doc);
+                        res.send(doc);
+                    }
+                })
             }
         })
     })
@@ -78,25 +98,52 @@ module.exports = function(app, db) {
             finalContent = converter.makeHtml(content) ;
         }
         else if(req.body.fileType === 'multiple') {
-            console.log('Into multiple')
             finalContent = content.map((item) => {
                 item =  converter.makeHtml(item);
                 return item;
              })
         }
         else{
-            res.send('Error in sending')
+            res.send('Error in sending');
         }
         const code= { name: req.body.name, content: finalContent, language:req.body.language};
         db.collection('codes').insert(code, (err,result) => {
             if (err){
-                console.log('Error in if ');
                 res.send({'error' : 'An error has occured'});
             } else {
                 res.send(result.ops[0]);
             }
         });
     });
+
+    // Creating users for code-snippet-manager
+    app.post('/createuser',(req,res) => {
+        var hashedPassword = bcrypt.hashSync(req.body.password, 8);
+        var profile_id = uuidv4();
+        const user = {name:req.body.name,email:req.body.email,profile_id : profile_id,password:hashedPassword};
+        db.collection('users').insert(user,(err,result) => {
+            if(err){
+                console.log('Error in if ');
+                res.send({'error' : 'An error has occured'});
+            } else {
+                res.send(result.ops[0]);
+            }
+        })
+    });
+
+    // For user to login
+    app.post('/login', function(req, res) {
+        db.collection('users').findOne({ email: req.body.email }, function (err, user) {
+          if (err) return res.status(500).send('Error on the server.');
+          if (!user) return res.status(404).send('No user found.');
+          var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
+          if (!passwordIsValid) return res.status(401).send({ auth: false, token: null });
+          var token = jwt.sign({ id: user._id, profile_id: user.profile_id }, config.secret, {
+            expiresIn: 86400 // expires in 24 hours
+          });
+          res.status(200).send({ auth: true, token: token });
+        });
+      });
 
     // Updating the codes
     app.put('/codes/:id', (req, res) => {
