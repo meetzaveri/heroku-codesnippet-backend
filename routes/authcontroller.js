@@ -7,6 +7,7 @@ var utils = require('../utils/utils');
 var jwt = require('jsonwebtoken');
 var bcrypt = require('bcryptjs');
 var config = require('../config/index');
+var moment = require('moment')
 
 showdown.setFlavor('github');
 
@@ -90,30 +91,44 @@ module.exports = function(app, db) {
     app.post('/codes', (req, res) => {
         // write parameters or json of the request here
         // create your codes here
-        console.log('Request Payload',req.body);
-        showdown.setFlavor('github');
-        var content = req.body.content;
-        var finalContent = null;
-        if(req.body.fileType === 'single'){
-            finalContent = converter.makeHtml(content) ;
-        }
-        else if(req.body.fileType === 'multiple') {
-            finalContent = content.map((item) => {
-                item =  converter.makeHtml(item);
-                return item;
-             })
-        }
-        else{
-            res.send('Error in sending');
-        }
-        const code= { name: req.body.name, content: finalContent, language:req.body.language};
-        db.collection('codes').insert(code, (err,result) => {
-            if (err){
-                res.send({'error' : 'An error has occured'});
-            } else {
-                res.send(result.ops[0]);
+        const { authorization } = req.headers;
+        console.log('authorization',authorization)
+        const authData = authorization.split(' ');
+        const token = authData[1];
+        utils.decodeToken(token,config.secret,function(err,userObj){
+            if(err){
+                res.send('Error occured while extracting token. User not authenticated')
+            } else{
+                console.log('Request Payload is',req.body);
+                showdown.setFlavor('github');
+                var content = req.body.content;
+                var finalContent = null;
+                if(req.body.fileType === 'single'){
+                    finalContent = converter.makeHtml(content) ;
+                }
+                else if(req.body.fileType === 'multiple') {
+                    finalContent = content.map((item) => {
+                        item =  converter.makeHtml(item);
+                        return item;
+                     })
+                }
+                else{
+                    res.send('Error in sending');
+                }
+                
+                const timestamp = moment().format('L');
+                const code= { name: req.body.name, content: finalContent, language:req.body.language,profile_id:userObj.profile_id,timestamp:timestamp,fileType:req.body.fileType,raw_cont:req.body.content};
+                
+                db.collection('codes').insert(code, (err,result) => {
+                    if (err){
+                        res.send({'error' : 'An error has occured'});
+                    } else {
+                        res.send(result.ops[0]);
+                    }
+                });
             }
-        });
+        })
+        
     });
 
     // Creating users for code-snippet-manager
