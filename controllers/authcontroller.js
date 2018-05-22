@@ -8,7 +8,6 @@ var jwt = require('jsonwebtoken');
 var bcrypt = require('bcryptjs');
 var config = require('../config/index');
 var moment = require('moment')
-
 showdown.setFlavor('github');
 
 module.exports = function(app, db) {
@@ -187,3 +186,9 @@ module.exports = function(app, db) {
         });
     });
 };
+
+
+// module.exports = {
+//     login : authLogin,
+//     signup : authSignup
+// }
