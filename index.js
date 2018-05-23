@@ -17,7 +17,7 @@ MongoClient.connect(db.url, (err, database) => {
     console.log('Passed if condition');
      // Make sure you add the database name and not the collection name
     var newDB = database.db("code-snippet-manager");
-    require('./routes/index')(app, newDB);
+    require('./controllers/index')(app, newDB);
     console.log('Required database condition');
     app.listen(port, () => {
         console.log('We are live on port ', port);
