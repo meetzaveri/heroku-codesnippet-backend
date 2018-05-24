@@ -9,7 +9,7 @@ var bcrypt = require('bcryptjs');
 var config = require('../config/index');
 var moment = require('moment')
 showdown.setFlavor('github');
-const async = require('async');
+const vanillaAsync = require('vanilla-async');
 
 module.exports = function(app, db) {
    
@@ -146,10 +146,30 @@ module.exports = function(app, db) {
             } else {
                 const id = req.params.id;
                 const details = { '_id': new ObjectID(id),'profile_id':userObj.profile_id  };
-                const code = { name: req.body.name, content: req.body.content, };
+                const content = req.body.content;
+                let finalContent = null;
+                if(req.body.fileType === 'markdown'){
+                    finalContent = converter.makeHtml(content) ;
+                }
+                else if(req.body.fileType === 'multiple' ) {
+                    finalContent = content.map((item) => {
+                        item =  converter.makeHtml(item);
+                        return item;
+                    })
+                }
+                else if(req.body.fileType === 'textnote'){
+                    finalContent = content;
+                }
+                else {
+                    res.send('Error in sending');
+                }
 
-                async.waterfall([
+                const code = { name: req.body.name, content: finalContent, };
+
+                // Using waterfall to perform dependent tasks and passing data on to next functions
+                vanillaAsync.waterfall([
                     function(callback){
+                        console.log('INTO VANILLA ASYNC')
                         db.collection('codes').findOne(details, (err, item) => {
                             if (err) {
                                 var err = {'error' : 'An error occured after get request'}
@@ -175,6 +195,7 @@ module.exports = function(app, db) {
                     if(err) {
                         res.send('Error in updating snippet');
                     } else {
+                        console.log('DONE');
                         res.send(results)
                     }
                 })
