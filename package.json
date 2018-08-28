@@ -21,6 +21,7 @@
     "jsonwebtoken": "^8.2.1",
     "moment": "^2.22.1",
     "mongodb": "^3.0.4",
+    "mongoose": "^5.2.10",
     "showdown": "^1.8.6",
     "uuid": "^3.2.1",
     "vanilla-async": "^1.0.8"
